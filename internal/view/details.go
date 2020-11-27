@@ -119,6 +119,7 @@ func (d *Details) bindKeys() {
 	d.actions.Set(ui.KeyActions{
 		tcell.KeyEnter:  ui.NewSharedKeyAction("Filter", d.filterCmd, false),
 		tcell.KeyEscape: ui.NewKeyAction("Back", d.resetCmd, false),
+		ui.KeyQ: ui.NewKeyAction("Back", d.resetCmd, false),
 		tcell.KeyCtrlS:  ui.NewKeyAction("Save", d.saveCmd, false),
 		ui.KeyC:         ui.NewKeyAction("Copy", d.cpCmd, true),
 		ui.KeyF:         ui.NewKeyAction("Toggle FullScreen", d.toggleFullScreenCmd, true),

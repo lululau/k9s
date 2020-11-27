@@ -107,6 +107,7 @@ func (b *Browser) suggestFilter() model.SuggestionFunc {
 func (b *Browser) bindKeys(aa ui.KeyActions) {
 	aa.Add(ui.KeyActions{
 		tcell.KeyEscape: ui.NewSharedKeyAction("Filter Reset", b.resetCmd, false),
+		ui.KeyQ: ui.NewSharedKeyAction("Filter Reset", b.resetCmd, false),
 		tcell.KeyEnter:  ui.NewSharedKeyAction("Filter", b.filterCmd, false),
 	})
 }
