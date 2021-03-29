@@ -27,7 +27,7 @@ require (
 	github.com/openfaas/faas-provider v0.15.0
 	github.com/petergtz/pegomock v2.9.0+incompatible
 	github.com/rakyll/hey v0.1.4
-	github.com/rs/zerolog v1.20.0
+	github.com/rs/zerolog v1.21.0
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sahilm/fuzzy v0.1.0
 	github.com/spf13/cobra v1.1.3
@@ -39,8 +39,7 @@ require (
 	k8s.io/apimachinery v0.20.5
 	k8s.io/cli-runtime v0.20.5
 	k8s.io/client-go v0.20.5
-	k8s.io/klog v1.0.0
-	k8s.io/klog/v2 v2.4.0 // indirect
+	k8s.io/klog/v2 v2.4.0
 	k8s.io/kubectl v0.20.5
 	k8s.io/metrics v0.20.5
 	sigs.k8s.io/yaml v1.2.0
