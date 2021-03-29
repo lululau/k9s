@@ -12,7 +12,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/derailed/popeye v0.9.0
-	github.com/derailed/tview v0.4.10
+	github.com/derailed/tview v0.5.2
 	github.com/drone/envsubst v1.0.2 // indirect
 	github.com/emicklei/go-restful v2.15.0+incompatible // indirect
 	github.com/fatih/color v1.10.0
@@ -39,8 +39,7 @@ require (
 	k8s.io/apimachinery v0.20.5
 	k8s.io/cli-runtime v0.20.5
 	k8s.io/client-go v0.20.5
-	k8s.io/klog v1.0.0
-	k8s.io/klog/v2 v2.4.0 // indirect
+	k8s.io/klog/v2 v2.4.0
 	k8s.io/kubectl v0.20.5
 	k8s.io/metrics v0.20.5
 	sigs.k8s.io/yaml v1.2.0
