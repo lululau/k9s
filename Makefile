@@ -1,9 +1,8 @@
 NAME    := k9s
 PACKAGE := github.com/derailed/$(NAME)
 GIT     := $(shell git rev-parse --short HEAD)
-SOURCE_DATE_EPOCH ?= $(shell date +%s)
-DATE    := $(shell date -u -r ${SOURCE_DATE_EPOCH} +%FT%T%Z)
-VERSION  ?= v0.24.3
+DATE     := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+VERSION  ?= v0.24.7
 IMG_NAME := derailed/k9s
 IMAGE    := ${IMG_NAME}:${VERSION}
 

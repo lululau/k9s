@@ -121,7 +121,7 @@ func (p Pod) Render(o interface{}, ns string, row *Row) error {
 		mapToStr(po.Labels),
 		asStatus(p.diagnose(phase, cr, len(ss))),
 		asNominated(po.Status.NominatedNodeName),
-		asReadinessGate(po.Spec.ReadinessGates),
+		asReadinessGate(po),
 		toAge(po.ObjectMeta.CreationTimestamp),
 	}
 
@@ -149,15 +149,25 @@ func asNominated(n string) string {
 	return n
 }
 
-func asReadinessGate(gg []v1.PodReadinessGate) string {
-	if len(gg) == 0 {
+func asReadinessGate(pod v1.Pod) string {
+	if len(pod.Spec.ReadinessGates) == 0 {
 		return MissingValue
 	}
-	ss := make([]string, 0, len(gg))
-	for _, g := range gg {
-		ss = append(ss, string(g.ConditionType))
+
+	trueConditions := 0
+	for _, readinessGate := range pod.Spec.ReadinessGates {
+		conditionType := readinessGate.ConditionType
+		for _, condition := range pod.Status.Conditions {
+			if condition.Type == conditionType {
+				if condition.Status == "True" {
+					trueConditions++
+				}
+				break
+			}
+		}
 	}
-	return strings.Join(ss, ",")
+
+	return strconv.Itoa(trueConditions) + "/" + strconv.Itoa(len(pod.Spec.ReadinessGates))
 }
 
 // PodWithMetrics represents a pod and its metrics.
