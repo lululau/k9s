@@ -17,7 +17,7 @@ type synchronizer interface {
 	QueueUpdate(func())
 }
 
-// Configurator represents an application configurationa.
+// Configurator represents an application configuration.
 type Configurator struct {
 	Config     *config.Config
 	Styles     *config.Styles
@@ -93,10 +93,12 @@ func (c *Configurator) StylesWatcher(ctx context.Context, s synchronizer) error 
 		for {
 			select {
 			case evt := <-w.Events:
-				_ = evt
-				s.QueueUpdateDraw(func() {
-					c.RefreshStyles(c.Config.K9s.CurrentCluster)
-				})
+				if evt.Op != fsnotify.Chmod {
+					log.Debug().Msgf("EVENT %#v", evt)
+					s.QueueUpdateDraw(func() {
+						c.RefreshStyles(c.Config.K9s.CurrentCluster)
+					})
+				}
 			case err := <-w.Errors:
 				log.Info().Err(err).Msg("Skin watcher failed")
 				return

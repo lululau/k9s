@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
@@ -34,10 +35,20 @@ type (
 	// Style tracks K9s styles.
 	Style struct {
 		Body   Body   `yaml:"body"`
+		Help   Help   `yaml:"help"`
 		Frame  Frame  `yaml:"frame"`
 		Info   Info   `yaml:"info"`
 		Views  Views  `yaml:"views"`
 		Dialog Dialog `yaml:"dialog"`
+	}
+
+	// Helps tracks help styles.
+	Help struct {
+		FgColor      Color `yaml:"fgColor"`
+		BgColor      Color `yaml:"bgColor"`
+		SectionColor Color `yaml:"sectionColor"`
+		KeyColor     Color `yaml:"keyColor"`
+		NumKeyColor  Color `yaml:"numKeyColor"`
 	}
 
 	// Body tracks body styles.
@@ -196,7 +207,22 @@ func NewColor(c string) Color {
 
 // String returns color as string.
 func (c Color) String() string {
-	return string(c)
+	if c.isHex() {
+		return string(c)
+	}
+	if c == DefaultColor {
+		return "-"
+	}
+	col := c.Color().TrueColor().Hex()
+	if col < 0 {
+		return "-"
+	}
+
+	return fmt.Sprintf("#%06x", col)
+}
+
+func (c Color) isHex() bool {
+	return len(c) == 7 && c[0] == '#'
 }
 
 // Color returns a view color.
@@ -204,10 +230,8 @@ func (c Color) Color() tcell.Color {
 	if c == DefaultColor {
 		return tcell.ColorDefault
 	}
-	if color, ok := tcell.ColorNames[c.String()]; ok {
-		return color
-	}
-	return tcell.GetColor(c.String())
+
+	return tcell.GetColor(string(c)).TrueColor()
 }
 
 // Colors converts series string colors to colors.
@@ -222,6 +246,7 @@ func (c Colors) Colors() []tcell.Color {
 func newStyle() Style {
 	return Style{
 		Body:   newBody(),
+		Help:   newHelp(),
 		Frame:  newFrame(),
 		Info:   newInfo(),
 		Views:  newViews(),
@@ -273,6 +298,16 @@ func newFrame() Frame {
 		Menu:   newMenu(),
 		Crumb:  newCrumb(),
 		Status: newStatus(),
+	}
+}
+
+func newHelp() Help {
+	return Help{
+		FgColor:      "cadetblue",
+		BgColor:      "black",
+		SectionColor: "green",
+		KeyColor:     "dodgerblue",
+		NumKeyColor:  "fuchsia",
 	}
 }
 
@@ -497,7 +532,7 @@ func (s *Styles) Load(path string) error {
 	if err := yaml.Unmarshal(f, s); err != nil {
 		return err
 	}
-	s.fireStylesChanged()
+	//s.fireStylesChanged()
 
 	return nil
 }

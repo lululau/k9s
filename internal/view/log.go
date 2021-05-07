@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -31,9 +30,6 @@ const (
 	logCoFmt     = " Logs([hilite:bg:]%s:[hilite:bg:b]%s[-:bg:-])[[green:bg:b]%s[-:bg:-]] "
 	flushTimeout = 1 * time.Millisecond
 )
-
-// InvalidCharsRX contains invalid filename characters.
-var invalidPathCharsRX = regexp.MustCompile(`[:/\\]+`)
 
 // Log represents a generic log viewer.
 type Log struct {
@@ -322,24 +318,18 @@ func (l *Log) cpCmd(*tcell.EventKey) *tcell.EventKey {
 	return nil
 }
 
-func sanitizeFilename(name string) string {
-	processedString := invalidPathCharsRX.ReplaceAllString(name, "-")
-
-	return processedString
-}
-
 func ensureDir(dir string) error {
 	return os.MkdirAll(dir, 0744)
 }
 
 func saveData(cluster, name, data string) (string, error) {
-	dir := filepath.Join(config.K9sDumpDir, sanitizeFilename(cluster))
+	dir := filepath.Join(config.K9sDumpDir, dao.SanitizeFilename(cluster))
 	if err := ensureDir(dir); err != nil {
 		return "", err
 	}
 
 	now := time.Now().UnixNano()
-	fName := fmt.Sprintf("%s-%d.log", sanitizeFilename(name), now)
+	fName := fmt.Sprintf("%s-%d.log", dao.SanitizeFilename(name), now)
 
 	path := filepath.Join(dir, fName)
 	mod := os.O_CREATE | os.O_WRONLY
@@ -420,6 +410,11 @@ func (l *Log) toggleFullScreenCmd(evt *tcell.EventKey) *tcell.EventKey {
 func (l *Log) goFullScreen() {
 	l.SetFullScreen(l.indicator.FullScreen())
 	l.Box.SetBorder(!l.indicator.FullScreen())
+	if l.indicator.FullScreen() {
+		l.logs.SetBorderPadding(0, 0, 0, 0)
+	} else {
+		l.logs.SetBorderPadding(0, 0, 1, 1)
+	}
 }
 
 // ----------------------------------------------------------------------------

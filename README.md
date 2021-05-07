@@ -9,32 +9,11 @@ for changes and offers subsequent commands to interact with your observed resour
 
 ---
 
-## Announcement
+## Note...
 
-<center>
-<img src="https://raw.githubusercontent.com/imhotepio/k9salpha/master/assets/k9sa_blue_300.png" alt="k9salpha" width="300"/>
-<h1>K9sAlpha RC-0 Is Out!</h1>
-</center>
+As you may know k9s is not pimped out by a big corporation with deep pockets. It is a complex OSS project that demands a lot of my time to maintain and support. K9s will always remain OSS and therefore free! That said if you feel, k9s makes your day to day Kubernetes journey a tad brighter, please consider sponsoring us or purchase a [K9sAlpha license](https://k9salpha.io). Your donations will go a long way in keeping our servers lights on and beers in our fridge! 
 
-<br/>
-
-Fresh off the press [K9sAlpha](https://k9salpha.io) is now available!
-Please read the details in the docs and checkout the new repo.
-
-- Store: [K9sAlpha Store](https://store.k9salpha.io).
-- Screencast: [K9sAlpha-v1.0.0-rc.0](https://www.youtube.com/watch?v=hLYK0oPLOIY&t=787s)
-
-> NOTE: Upon purchase, in order to activate your license, please send us a valid user name so we can generate your personalized license key. All licenses are valid for a whole year from the date of purchase.
-
-For all other cases, please reach out to us so we can discuss your needs:
-
-- Corporate licenses
-- Education
-- Non Profit
-- Active K9s sponsors
-- Long term K9s supporters and contributors
-- Can't afford it
-- Others...
+**Thank you!**
 
 ---
 
@@ -250,7 +229,7 @@ K9s uses aliases to navigate most K8s resources.
 | View a Kubernetes resource using singular/plural or short-name | `:`po⏎                        | accepts singular, plural, short-name or alias ie pod or pods           |
 | View a Kubernetes resource in a given namespace                | `:`alias namespace⏎           |                                                                        |
 | Filter out a resource view given a filter                      | `/`filter⏎                    | Regex2 supported ie `fred|blee` to filter resources named fred or blee |
-| Inverse regex filer                                            | `/`! filter⏎                  | Keep everything that *doesn't* match.                                  |
+| Inverse regex filter                                           | `/`! filter⏎                  | Keep everything that *doesn't* match.                                  |
 | Filter resource view by labels                                 | `/`-l label-selector⏎         |                                                                        |
 | Fuzzy find a resource given a filter                           | `/`-f filter⏎                 |                                                                        |
 | Bails out of view/command/filter mode                          | `<esc>`                       |                                                                        |
@@ -710,7 +689,7 @@ You can style K9s based on your own sense of look and style. Skins are YAML file
 You can also change K9s skins based on the cluster you are connecting too. In this case, you can specify the skin file name as `$HOME/.k9s/mycontext_skin.yml`
 Below is a sample skin file, more skins are available in the skins directory in this repo, just simply copy any of these in your user's home dir as `skin.yml`.
 
-Colors can be defined by name or uing an hex representation. Of recent, we've added a color named `default` to indicate a transparent background color to preserve your terminal background color settings if so desired.
+Colors can be defined by name or using a hex representation. Of recent, we've added a color named `default` to indicate a transparent background color to preserve your terminal background color settings if so desired.
 
 > NOTE: This is very much an experimental feature at this time, more will be added/modified if this feature has legs so thread accordingly!
 
@@ -730,6 +709,13 @@ k9s:
   info:
     fgColor: lightskyblue
     sectionColor: steelblue
+  # Help panel styles
+  help:
+    fgColor: white
+    bgColor: black
+    keyColor: cyan
+    numKeyColor: blue
+    sectionColor: gray
   frame:
     # Borders styles.
     border:

@@ -595,7 +595,7 @@ func (a *App) helpCmd(evt *tcell.EventKey) *tcell.EventKey {
 		return nil
 	}
 
-	if err := a.inject(NewHelp()); err != nil {
+	if err := a.inject(NewHelp(a)); err != nil {
 		a.Flash().Err(err)
 	}
 
@@ -622,7 +622,7 @@ func (a *App) aliasCmd(evt *tcell.EventKey) *tcell.EventKey {
 func (a *App) gotoResource(cmd, path string, clearStack bool) error {
 	err := a.command.run(cmd, path, clearStack)
 	if err == nil {
-		return err
+		return nil
 	}
 
 	c := NewCow(a, err.Error())

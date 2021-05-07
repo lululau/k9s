@@ -49,9 +49,10 @@ type (
 
 	// Config tracks K9s configuration options.
 	Config struct {
-		K9s      *K9s `yaml:"k9s"`
-		client   client.Connection
-		settings KubeSettings
+		K9s        *K9s `yaml:"k9s"`
+		client     client.Connection
+		settings   KubeSettings
+		overrideNS bool
 	}
 )
 
@@ -70,12 +71,11 @@ func NewConfig(ks KubeSettings) *Config {
 }
 
 // Refine the configuration based on cli args.
-func (c *Config) Refine(flags *genericclioptions.ConfigFlags) error {
+func (c *Config) Refine(flags *genericclioptions.ConfigFlags, k9sFlags *Flags) error {
 	cfg, err := flags.ToRawKubeConfigLoader().RawConfig()
 	if err != nil {
 		return err
 	}
-
 	if isSet(flags.Context) {
 		c.K9s.CurrentContext = *flags.Context
 	} else {
@@ -90,20 +90,24 @@ func (c *Config) Refine(flags *genericclioptions.ConfigFlags) error {
 		return fmt.Errorf("The specified context %q does not exists in kubeconfig", c.K9s.CurrentContext)
 	}
 	c.K9s.CurrentCluster = context.Cluster
-	if len(context.Namespace) != 0 {
-		if err := c.SetActiveNamespace(context.Namespace); err != nil {
-			return err
-		}
+	c.K9s.ActivateCluster()
+
+	var ns string
+	var override bool
+	if k9sFlags != nil && IsBoolSet(k9sFlags.AllNamespaces) {
+		ns, override = client.NamespaceAll, true
+	} else if isSet(flags.Namespace) {
+		ns, override = *flags.Namespace, true
+	} else if len(context.Namespace) != 0 {
+		ns = context.Namespace
 	}
+	if err := c.SetActiveNamespace(ns); err != nil {
+		return err
+	}
+	flags.Namespace, c.overrideNS = &ns, override
 
 	if isSet(flags.ClusterName) {
 		c.K9s.CurrentCluster = *flags.ClusterName
-	}
-
-	if isSet(flags.Namespace) {
-		if err := c.SetActiveNamespace(*flags.Namespace); err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -125,11 +129,19 @@ func (c *Config) CurrentCluster() *Cluster {
 
 // ActiveNamespace returns the active namespace in the current cluster.
 func (c *Config) ActiveNamespace() string {
-	if cl := c.CurrentCluster(); cl != nil {
-		if cl.Namespace != nil {
-			return cl.Namespace.Active
-		}
+	if c.K9s.Clusters == nil {
+		log.Warn().Msgf("No context detected returning default namespace")
+		return "default"
 	}
+	cl := c.CurrentCluster()
+	if cl == nil {
+		cl = NewCluster()
+		c.K9s.Clusters[c.K9s.CurrentCluster] = cl
+	}
+	if cl.Namespace != nil {
+		return cl.Namespace.Active
+	}
+
 	return "default"
 }
 
@@ -193,6 +205,9 @@ func (c *Config) GetConnection() client.Connection {
 // SetConnection set an api server connection.
 func (c *Config) SetConnection(conn client.Connection) {
 	c.client = conn
+	if c.client != nil && c.client.Config() != nil {
+		c.client.Config().OverrideNS = c.overrideNS
+	}
 }
 
 // Load K9s configuration from file

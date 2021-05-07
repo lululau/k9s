@@ -88,7 +88,7 @@ func (c *CronJob) triggerCmd(evt *tcell.EventKey) *tcell.EventKey {
 		}
 		runner, ok := res.(dao.Runnable)
 		if !ok {
-			c.App().Flash().Err(fmt.Errorf("expecting a jobrunner resource for %q", c.GVR()))
+			c.App().Flash().Err(fmt.Errorf("expecting a job runner resource for %q", c.GVR()))
 			return
 		}
 
@@ -165,7 +165,7 @@ func (c *CronJob) makeSuspendForm(sel string, suspend bool) *tview.Form {
 func (c *CronJob) toggleSuspend(ctx context.Context, path string) error {
 	res, err := dao.AccessorFor(c.App().factory, c.GVR())
 	if err != nil {
-		return nil
+		return err
 	}
 	cronJob, ok := res.(*dao.CronJob)
 	if !ok {
