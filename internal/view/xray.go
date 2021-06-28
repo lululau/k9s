@@ -92,6 +92,10 @@ func (x *Xray) Init(ctx context.Context) error {
 	return nil
 }
 
+func (*Xray) InCmdMode() bool {
+	return false
+}
+
 // ExtraHints returns additional hints.
 func (x *Xray) ExtraHints() map[string]string {
 	if x.app.Config.K9s.NoIcons {
@@ -263,7 +267,12 @@ func (x *Xray) showLogs(spec *xray.NodeSpec, prev bool) {
 		return
 	}
 
-	if err := x.app.inject(NewLog(client.NewGVR("v1/pods"), path, co, prev)); err != nil {
+	opts := dao.LogOptions{
+		Path:      path,
+		Container: co,
+		Previous:  prev,
+	}
+	if err := x.app.inject(NewLog(client.NewGVR("v1/pods"), &opts)); err != nil {
 		x.app.Flash().Err(err)
 	}
 }
@@ -449,9 +458,7 @@ func (x *Xray) gotoCmd(evt *tcell.EventKey) *tcell.EventKey {
 	if len(strings.Split(spec.Path(), "/")) == 1 {
 		return nil
 	}
-	if err := x.app.gotoResource(client.NewGVR(spec.GVR()).R(), spec.Path(), false); err != nil {
-		x.app.Flash().Err(err)
-	}
+	x.app.gotoResource(client.NewGVR(spec.GVR()).R(), spec.Path(), false)
 
 	return nil
 }
