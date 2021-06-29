@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/atotto/clipboard"
-
 	"github.com/derailed/k9s/internal/client"
 	"github.com/derailed/k9s/internal/color"
 	"github.com/derailed/k9s/internal/config"
@@ -356,7 +355,6 @@ func saveData(cluster, name, data string) (string, error) {
 	if err != nil {
 		log.Error().Err(err).Msgf("LogFile create %s", path)
 		return "", nil
-
 	}
 	defer func() {
 		if err := file.Close(); err != nil {

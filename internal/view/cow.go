@@ -12,7 +12,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-// Cow represents a bomb viewer
+// Cow represents a bomb viewer.
 type Cow struct {
 	*tview.TextView
 
@@ -109,7 +109,7 @@ func (c *Cow) resetCmd(evt *tcell.EventKey) *tcell.EventKey {
 	return c.app.PrevCmd(evt)
 }
 
-// Actions returns menu actions
+// Actions returns menu actions.
 func (c *Cow) Actions() ui.KeyActions {
 	return c.actions
 }
