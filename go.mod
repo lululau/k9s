@@ -27,7 +27,7 @@ require (
 	github.com/openfaas/faas-provider v0.15.0
 	github.com/petergtz/pegomock v2.9.0+incompatible
 	github.com/rakyll/hey v0.1.4
-	github.com/rs/zerolog v1.22.0
+	github.com/rs/zerolog v1.25.0
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sahilm/fuzzy v0.1.0
 	github.com/spf13/cobra v1.1.3
