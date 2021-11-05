@@ -148,7 +148,7 @@ func (a *Aliases) loadDefaultAliases() {
 	a.declare("popeye", "pop")
 	a.declare("helm", "charts", "chart", "hm")
 	a.declare("dir", "d")
-	a.declare("contexts", "context", "ctx")
+	a.declare("contexts", "context", "ctx", "c")
 	a.declare("users", "user", "usr")
 	a.declare("groups", "group", "grp")
 	a.declare("portforwards", "portforward", "pf")
