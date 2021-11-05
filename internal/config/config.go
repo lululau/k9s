@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/adrg/xdg"
 	"github.com/derailed/k9s/internal/client"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v2"
@@ -18,8 +19,6 @@ import (
 const K9sConfig = "K9SCONFIG"
 
 var (
-	// DefaultK9sHome represent K9s home directory.
-	DefaultK9sHome = filepath.Join(mustK9sHome(), ".k9s")
 	// K9sConfigFile represents K9s config file location.
 	K9sConfigFile = filepath.Join(K9sHome(), "config.yml")
 	// K9sLogs represents K9s log.
@@ -61,8 +60,12 @@ func K9sHome() string {
 	if env := os.Getenv(K9sConfig); env != "" {
 		return env
 	}
+	xdgK9sHome, err := xdg.ConfigFile("k9s")
+	if err != nil {
+		log.Fatal().Err(err).Msg("Unable to create configuration directory for k9s")
+	}
 
-	return DefaultK9sHome
+	return xdgK9sHome
 }
 
 // NewConfig creates a new default config.
@@ -98,13 +101,16 @@ func (c *Config) Refine(flags *genericclioptions.ConfigFlags, k9sFlags *Flags) e
 		ns, override = client.NamespaceAll, true
 	} else if isSet(flags.Namespace) {
 		ns, override = *flags.Namespace, true
-	} else if len(context.Namespace) != 0 {
+	} else if context.Namespace != "" {
 		ns = context.Namespace
 	}
-	if err := c.SetActiveNamespace(ns); err != nil {
-		return err
+
+	if ns != "" {
+		if err := c.SetActiveNamespace(ns); err != nil {
+			return err
+		}
+		flags.Namespace, c.overrideNS = &ns, override
 	}
-	flags.Namespace, c.overrideNS = &ns, override
 
 	if isSet(flags.ClusterName) {
 		c.K9s.CurrentCluster = *flags.ClusterName

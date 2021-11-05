@@ -59,6 +59,10 @@ func (s *Service) showPods(a *App, _ ui.Tabular, gvr, path string) {
 		a.Flash().Err(err)
 		return
 	}
+	if svc.Spec.Type == v1.ServiceTypeExternalName {
+		a.Flash().Warnf("No matching pods. Service %s is an external service.", path)
+		return
+	}
 
 	showPodsWithLabels(a, path, svc.Spec.Selector)
 }

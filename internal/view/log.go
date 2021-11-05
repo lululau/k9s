@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -97,8 +98,9 @@ func (l *Log) Init(ctx context.Context) (err error) {
 	return nil
 }
 
-func (v *Log) InCmdMode() bool {
-	return v.logs.cmdBuff.InCmdMode()
+// InCmdMode checks if prompt is active.
+func (l *Log) InCmdMode() bool {
+	return l.logs.cmdBuff.InCmdMode()
 }
 
 // LogCleared clears the logs.
@@ -273,6 +275,7 @@ var EOL = []byte{'\n'}
 
 // Flush write logs to viewer.
 func (l *Log) Flush(lines [][]byte) {
+	log.Debug().Msgf("LINES [%d]%d", runtime.NumGoroutine(), len(strings.Split(l.logs.GetText(true), "\n")))
 	if !l.indicator.AutoScroll() {
 		return
 	}

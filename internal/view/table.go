@@ -52,6 +52,7 @@ func (t *Table) Init(ctx context.Context) (err error) {
 	return nil
 }
 
+// HeaderIndex returns index of a given column or false if not found.
 func (t *Table) HeaderIndex(header string) (int, bool) {
 	for i := 0; i < t.GetColumnCount(); i++ {
 		if h := t.GetCell(0, i); h != nil && h.Text == header {
@@ -106,6 +107,10 @@ func (t *Table) defaultEnv() Env {
 	if env["FILTER"] == "" {
 		env["NAMESPACE"], env["FILTER"] = client.Namespaced(path)
 	}
+
+	env["RESOURCE_GROUP"] = t.GVR().G()
+	env["RESOURCE_VERSION"] = t.GVR().V()
+	env["RESOURCE_NAME"] = t.GVR().R()
 
 	return env
 }
