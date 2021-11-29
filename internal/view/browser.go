@@ -128,7 +128,11 @@ func (b *Browser) SetInstance(path string) {
 // Start initializes browser updates.
 func (b *Browser) Start() {
 	b.app.Config.ValidateFavorites()
-	if err := b.app.switchNS(b.app.Config.ActiveNamespace()); err != nil {
+	ns := b.app.Config.ActiveNamespace()
+	if n := b.GetModel().GetNamespace(); !client.IsClusterScoped(n) {
+		ns = n
+	}
+	if err := b.app.switchNS(ns); err != nil {
 		log.Error().Err(err).Msgf("ns switch failed")
 	}
 	if err := b.app.Config.Save(); err != nil {
@@ -437,7 +441,7 @@ func (b *Browser) setNamespace(ns string) {
 	if !b.meta.Namespaced {
 		ns = client.ClusterScope
 	}
-	b.GetModel().SetNamespace(client.CleanseNamespace(ns))
+	b.GetModel().SetNamespace(ns)
 }
 
 func (b *Browser) defaultContext() context.Context {
