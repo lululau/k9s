@@ -19,8 +19,8 @@ const K9sConfig = "K9SCONFIG"
 var (
 	// K9sConfigFile represents K9s config file location.
 	K9sConfigFile = filepath.Join(K9sHome(), "config.yml")
-	// K9sDumpDir represents a directory where K9s screen dumps will be persisted.
-	K9sDumpDir = filepath.Join(os.TempDir(), fmt.Sprintf("k9s-screens-%s", MustK9sUser()))
+	// K9sDefaultScreenDumpDir represents a default directory where K9s screen dumps will be persisted.
+	K9sDefaultScreenDumpDir = filepath.Join(os.TempDir(), fmt.Sprintf("k9s-screens-%s", MustK9sUser()))
 )
 
 type (
@@ -116,6 +116,8 @@ func (c *Config) Refine(flags *genericclioptions.ConfigFlags, k9sFlags *Flags, c
 		c.K9s.CurrentCluster = *flags.ClusterName
 	}
 
+	EnsurePath(c.K9s.GetScreenDumpDir(), DefaultDirMod)
+
 	return nil
 }
 
@@ -144,6 +146,14 @@ func (c *Config) ActiveNamespace() string {
 		cl = NewCluster()
 		c.K9s.Clusters[c.K9s.CurrentCluster] = cl
 	}
+	if ns, err := c.settings.CurrentNamespaceName(); err == nil && ns != "" {
+		if cl.Namespace == nil {
+			cl.Namespace = NewNamespace()
+		}
+		cl.Namespace.Active = ns
+		return ns
+	}
+
 	if cl.Namespace != nil {
 		return cl.Namespace.Active
 	}
