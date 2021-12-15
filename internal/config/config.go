@@ -36,15 +36,14 @@ type (
 		CurrentNamespaceName() (string, error)
 
 		// ClusterNames() returns all available cluster names.
-		ClusterNames() ([]string, error)
+		ClusterNames() (map[string]struct{}, error)
 	}
 
 	// Config tracks K9s configuration options.
 	Config struct {
-		K9s        *K9s `yaml:"k9s"`
-		client     client.Connection
-		settings   KubeSettings
-		overrideNS bool
+		K9s      *K9s `yaml:"k9s"`
+		client   client.Connection
+		settings KubeSettings
 	}
 )
 
@@ -94,14 +93,16 @@ func (c *Config) Refine(flags *genericclioptions.ConfigFlags, k9sFlags *Flags, c
 	c.K9s.ActivateCluster()
 
 	var ns string
-	var override bool
 	if k9sFlags != nil && IsBoolSet(k9sFlags.AllNamespaces) {
-		ns, override = client.NamespaceAll, true
+		ns = client.NamespaceAll
 	} else if isSet(flags.Namespace) {
-		ns, override = *flags.Namespace, true
+		ns = *flags.Namespace
 	} else if context.Namespace != "" {
 		ns = context.Namespace
-	} else if cl := c.K9s.ActiveCluster(); cl != nil {
+		if cl := c.K9s.ActiveCluster(); cl != nil && cl.Namespace != nil && cl.Namespace.Active != "" {
+			ns = cl.Namespace.Active
+		}
+	} else if cl := c.K9s.ActiveCluster(); cl != nil && cl.Namespace != nil {
 		ns = cl.Namespace.Active
 	}
 
@@ -109,7 +110,7 @@ func (c *Config) Refine(flags *genericclioptions.ConfigFlags, k9sFlags *Flags, c
 		if err := c.SetActiveNamespace(ns); err != nil {
 			return err
 		}
-		flags.Namespace, c.overrideNS = &ns, override
+		flags.Namespace = &ns
 	}
 
 	if isSet(flags.ClusterName) {
@@ -142,6 +143,9 @@ func (c *Config) ActiveNamespace() string {
 		return "default"
 	}
 	cl := c.CurrentCluster()
+	if cl != nil && cl.Namespace != nil {
+		return cl.Namespace.Active
+	}
 	if cl == nil {
 		cl = NewCluster()
 		c.K9s.Clusters[c.K9s.CurrentCluster] = cl
@@ -152,10 +156,6 @@ func (c *Config) ActiveNamespace() string {
 		}
 		cl.Namespace.Active = ns
 		return ns
-	}
-
-	if cl.Namespace != nil {
-		return cl.Namespace.Active
 	}
 
 	return "default"
@@ -221,9 +221,6 @@ func (c *Config) GetConnection() client.Connection {
 // SetConnection set an api server connection.
 func (c *Config) SetConnection(conn client.Connection) {
 	c.client = conn
-	if c.client != nil && c.client.Config() != nil {
-		c.client.Config().OverrideNS = c.overrideNS
-	}
 }
 
 // Load K9s configuration from file.
