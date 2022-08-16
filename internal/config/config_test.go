@@ -284,6 +284,7 @@ var expectedConfig = `k9s:
   logoless: false
   crumbsless: false
   readOnly: true
+  noExitOnCtrlC: false
   noIcons: false
   logger:
     tail: 500
@@ -298,6 +299,7 @@ var expectedConfig = `k9s:
     blee:
       namespace:
         active: default
+        lockFavorites: false
         favorites:
         - default
       view:
@@ -316,6 +318,7 @@ var expectedConfig = `k9s:
     fred:
       namespace:
         active: default
+        lockFavorites: false
         favorites:
         - default
         - kube-public
@@ -338,6 +341,7 @@ var expectedConfig = `k9s:
     minikube:
       namespace:
         active: kube-system
+        lockFavorites: false
         favorites:
         - default
         - kube-public
@@ -375,6 +379,7 @@ var resetConfig = `k9s:
   logoless: false
   crumbsless: false
   readOnly: false
+  noExitOnCtrlC: false
   noIcons: false
   logger:
     tail: 200
@@ -389,6 +394,7 @@ var resetConfig = `k9s:
     blee:
       namespace:
         active: default
+        lockFavorites: false
         favorites:
         - default
       view:
