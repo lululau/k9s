@@ -532,7 +532,7 @@ func (b *Browser) simpleDelete(selections []string, msg string) {
 				b.app.Flash().Errf("Invalid nuker %T", b.accessor)
 				continue
 			}
-			if err := nuker.Delete(context.Background(), sel, nil, false); err != nil {
+			if err := nuker.Delete(context.Background(), sel, nil, dao.DefaultGrace); err != nil {
 				b.app.Flash().Errf("Delete failed with `%s", err)
 			} else {
 				b.app.factory.DeleteForwarder(sel)
@@ -552,7 +552,11 @@ func (b *Browser) resourceDelete(selections []string, msg string) {
 			b.app.Flash().Infof("Delete resource %s %s", b.GVR(), selections[0])
 		}
 		for _, sel := range selections {
-			if err := b.GetModel().Delete(b.defaultContext(), sel, propagation, force); err != nil {
+			grace := dao.DefaultGrace
+			if force {
+				grace = dao.ForceGrace
+			}
+			if err := b.GetModel().Delete(b.defaultContext(), sel, propagation, grace); err != nil {
 				b.app.Flash().Errf("Delete failed with `%s", err)
 			} else {
 				b.app.factory.DeleteForwarder(sel)

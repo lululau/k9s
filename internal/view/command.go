@@ -114,12 +114,13 @@ func (c *Command) run(cmd, path string, clearStack bool) error {
 		return nil
 	}
 	cmds := strings.Split(cmd, " ")
-	gvr, v, err := c.viewMetaFor(cmds[0])
+	command := strings.ToLower(cmds[0])
+	gvr, v, err := c.viewMetaFor(command)
 	if err != nil {
 		return err
 	}
 
-	switch cmds[0] {
+	switch command {
 	case "ctx", "context", "contexts":
 		if len(cmds) == 2 {
 			return useContext(c.app, cmds[1])
@@ -139,7 +140,7 @@ func (c *Command) run(cmd, path string, clearStack bool) error {
 		if err := c.app.switchNS(ns); err != nil {
 			return err
 		}
-		if !c.alias.Check(cmds[0]) {
+		if !c.alias.Check(command) {
 			return fmt.Errorf("`%s` Command not found", cmd)
 		}
 		return c.exec(cmd, gvr, c.componentFor(gvr, path, v), clearStack)
@@ -179,7 +180,7 @@ func (c *Command) specialCmd(cmd, path string) bool {
 	case "cow":
 		c.app.cowCmd(path)
 		return true
-	case "q", "q!", "Q", "quit":
+	case "q", "q!", "qa", "Q", "quit":
 		c.app.BailOut()
 		return true
 	case "?", "h", "help":
