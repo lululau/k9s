@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package dao
 
 import (
@@ -41,6 +44,11 @@ func NewPortForwarder(f Factory) *PortForwarder {
 		stopChan:  make(chan struct{}),
 		readyChan: make(chan struct{}),
 	}
+}
+
+// String dumps as string.
+func (p *PortForwarder) String() string {
+	return fmt.Sprintf("%s|%s", p.path, p.tunnel)
 }
 
 // Age returns the port forward age.

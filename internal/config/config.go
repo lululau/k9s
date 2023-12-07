@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package config
 
 import (
@@ -5,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/adrg/xdg"
 	"github.com/derailed/k9s/internal/client"
@@ -19,6 +23,10 @@ const K9sConfig = "K9SCONFIG"
 var (
 	// K9sConfigFile represents K9s config file location.
 	K9sConfigFile = filepath.Join(K9sHome(), "config.yml")
+
+	// K9sSkinDir represent K9s skin dir
+	K9sSkinDir = filepath.Join(K9sHome(), "skins")
+
 	// K9sDefaultScreenDumpDir represents a default directory where K9s screen dumps will be persisted.
 	K9sDefaultScreenDumpDir = filepath.Join(os.TempDir(), fmt.Sprintf("k9s-screens-%s", MustK9sUser()))
 )
@@ -271,9 +279,32 @@ func (c *Config) Dump(msg string) {
 	}
 }
 
+// YamlExtension tries to find the correct extension for a YAML file
+func YamlExtension(path string) string {
+	if !isYamlFile(path) {
+		log.Error().Msgf("Config: File %s is not a yaml file", path)
+		return path
+	}
+
+	// Strip any extension, if there is no extension the path will remain unchanged
+	path = strings.TrimSuffix(path, filepath.Ext(path))
+	result := path + ".yml"
+
+	if _, err := os.Stat(result); os.IsNotExist(err) {
+		return path + ".yaml"
+	}
+
+	return result
+}
+
 // ----------------------------------------------------------------------------
 // Helpers...
 
 func isSet(s *string) bool {
 	return s != nil && len(*s) > 0
+}
+
+func isYamlFile(file string) bool {
+	ext := filepath.Ext(file)
+	return ext == ".yml" || ext == ".yaml"
 }

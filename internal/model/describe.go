@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package model
 
 import (
@@ -34,6 +37,11 @@ func NewDescribe(gvr client.GVR, path string) *Describe {
 		path:        path,
 		refreshRate: defaultReaderRefreshRate,
 	}
+}
+
+// GVR returns the resource gvr.
+func (d *Describe) GVR() client.GVR {
+	return d.gvr
 }
 
 // GetPath returns the active resource path.

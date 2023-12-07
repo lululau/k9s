@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package config
 
 import (
@@ -10,7 +13,7 @@ import (
 )
 
 // K9sAlias manages K9s aliases.
-var K9sAlias = filepath.Join(K9sHome(), "alias.yml")
+var K9sAlias = YamlExtension(filepath.Join(K9sHome(), "alias.yml"))
 
 // Alias tracks shortname to GVR mappings.
 type Alias map[string]string

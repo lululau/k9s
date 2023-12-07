@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package dao
 
 import (
@@ -30,6 +33,7 @@ var (
 	_ Loggable        = (*Pod)(nil)
 	_ Controller      = (*Pod)(nil)
 	_ ContainsPodSpec = (*Pod)(nil)
+	_ ImageLister     = (*Pod)(nil)
 )
 
 const (
@@ -71,6 +75,16 @@ func (p *Pod) Get(ctx context.Context, path string) (runtime.Object, error) {
 	}
 
 	return &render.PodWithMetrics{Raw: u, MX: pmx}, nil
+}
+
+// ListImages lists container images.
+func (p *Pod) ListImages(ctx context.Context, path string) ([]string, error) {
+	pod, err := p.GetInstance(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return render.ExtractImages(&pod.Spec), nil
 }
 
 // List returns a collection of nodes.
@@ -181,7 +195,7 @@ func (p *Pod) GetInstance(fqn string) (*v1.Pod, error) {
 func (p *Pod) TailLogs(ctx context.Context, opts *LogOptions) ([]LogChan, error) {
 	fac, ok := ctx.Value(internal.KeyFactory).(*watch.Factory)
 	if !ok {
-		return nil, errors.New("No factory in context")
+		return nil, errors.New("no factory in context")
 	}
 	o, err := fac.Get(p.gvr.String(), opts.Path, true, labels.Everything())
 	if err != nil {
@@ -499,4 +513,45 @@ func GetDefaultContainer(m metav1.ObjectMeta, spec v1.PodSpec) (string, bool) {
 	}
 
 	return "", false
+}
+
+func (p *Pod) Sanitize(ctx context.Context, ns string) (int, error) {
+	oo, err := p.Resource.List(ctx, ns)
+	if err != nil {
+		return 0, err
+	}
+
+	var count int
+	for _, o := range oo {
+		u, ok := o.(*unstructured.Unstructured)
+		if !ok {
+			continue
+		}
+		var pod v1.Pod
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, &pod)
+		if err != nil {
+			continue
+		}
+		log.Debug().Msgf("Pod status: %q", render.PodStatus(&pod))
+		switch render.PodStatus(&pod) {
+		case render.PhaseCompleted:
+			fallthrough
+		case render.PhaseCrashLoop:
+			fallthrough
+		case render.PhaseError:
+			fallthrough
+		case render.PhaseImagePullBackOff:
+			fallthrough
+		case render.PhaseOOMKilled:
+			log.Debug().Msgf("Sanitizing %s:%s", pod.Namespace, pod.Name)
+			fqn := client.FQN(pod.Namespace, pod.Name)
+			if err := p.Resource.Delete(ctx, fqn, nil, NowGrace); err != nil {
+				return count, err
+			}
+			count++
+		}
+	}
+	log.Debug().Msgf("Sanitizer deleted %d pods", count)
+
+	return count, nil
 }

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package config
 
 import (
@@ -7,10 +10,12 @@ import (
 const (
 	// DefaultLoggerTailCount tracks default log tail size.
 	DefaultLoggerTailCount = 100
+
 	// MaxLogThreshold sets the max value for log size.
 	MaxLogThreshold = 5000
+
 	// DefaultSinceSeconds tracks default log age.
-	DefaultSinceSeconds = 300 // all logs
+	DefaultSinceSeconds = -1 // tail logs by default
 )
 
 // Logger tracks logger options.

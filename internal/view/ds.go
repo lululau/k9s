@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package view
 
 import (
@@ -15,9 +18,11 @@ type DaemonSet struct {
 func NewDaemonSet(gvr client.GVR) ResourceViewer {
 	d := DaemonSet{
 		ResourceViewer: NewPortForwardExtender(
-			NewRestartExtender(
-				NewImageExtender(
-					NewLogsExtender(NewBrowser(gvr), nil),
+			NewVulnerabilityExtender(
+				NewRestartExtender(
+					NewImageExtender(
+						NewLogsExtender(NewBrowser(gvr), nil),
+					),
 				),
 			),
 		),

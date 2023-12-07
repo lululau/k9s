@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package view
 
 import (
@@ -5,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/derailed/k9s/internal"
 	"github.com/derailed/k9s/internal/client"
 	"github.com/derailed/k9s/internal/dao"
 	"github.com/derailed/k9s/internal/ui"
@@ -26,8 +30,13 @@ func NewNode(gvr client.GVR) ResourceViewer {
 	}
 	n.AddBindKeysFn(n.bindKeys)
 	n.GetTable().SetEnterFn(n.showPods)
+	n.SetContextFn(n.nodeContext)
 
 	return &n
+}
+
+func (n *Node) nodeContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, internal.KeyPodCounting, !n.App().Config.K9s.DisablePodCounting)
 }
 
 func (n *Node) bindDangerousKeys(aa ui.KeyActions) {
@@ -45,14 +54,12 @@ func (n *Node) bindDangerousKeys(aa ui.KeyActions) {
 }
 
 func (n *Node) bindKeys(aa ui.KeyActions) {
-	aa.Delete(ui.KeySpace, tcell.KeyCtrlSpace)
-
 	if !n.App().Config.K9s.IsReadOnly() {
 		n.bindDangerousKeys(aa)
 	}
 
 	aa.Add(ui.KeyActions{
-		ui.KeyY:      ui.NewKeyAction("YAML", n.yamlCmd, true),
+		ui.KeyY:      ui.NewKeyAction(yamlAction, n.yamlCmd, true),
 		ui.KeyShiftC: ui.NewKeyAction("Sort CPU", n.GetTable().SortColCmd(cpuCol, false), false),
 		ui.KeyShiftM: ui.NewKeyAction("Sort MEM", n.GetTable().SortColCmd(memCol, false), false),
 		ui.KeyShift0: ui.NewKeyAction("Sort Pods", n.GetTable().SortColCmd("PODS", false), false),
@@ -93,7 +100,7 @@ func drainNode(v ResourceViewer, path string, opts dao.DrainOptions) {
 	v.Stop()
 	defer v.Start()
 	{
-		d := NewDetails(v.App(), "Drain Progress", path, true)
+		d := NewDetails(v.App(), "Drain Progress", path, contentYAML, true)
 		if err := v.App().inject(d, false); err != nil {
 			v.App().Flash().Err(err)
 		}
@@ -151,7 +158,7 @@ func (n *Node) sshCmd(evt *tcell.EventKey) *tcell.EventKey {
 	defer n.Start()
 	_, node := client.Namespaced(path)
 	if err := ssh(n.App(), node); err != nil {
-		log.Error().Err(err).Msgf("SSH Failed")
+		log.Error().Err(err).Msgf("Node Shell Failed")
 	}
 
 	return nil
@@ -187,7 +194,7 @@ func (n *Node) yamlCmd(evt *tcell.EventKey) *tcell.EventKey {
 		return nil
 	}
 
-	details := NewDetails(n.App(), "YAML", sel, true).Update(raw)
+	details := NewDetails(n.App(), yamlAction, sel, contentYAML, true).Update(raw)
 	if err := n.App().inject(details, false); err != nil {
 		n.App().Flash().Err(err)
 	}

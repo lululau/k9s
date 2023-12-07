@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package view
 
 import (
@@ -44,7 +47,7 @@ func (b *Benchmark) viewBench(app *App, model ui.Tabular, gvr, path string) {
 		return
 	}
 
-	details := NewDetails(b.App(), "Results", fileToSubject(path), false).Update(data)
+	details := NewDetails(b.App(), "Results", fileToSubject(path), contentYAML, false).Update(data)
 	if err := app.inject(details, false); err != nil {
 		app.Flash().Err(err)
 	}
@@ -65,7 +68,7 @@ func fileToSubject(path string) string {
 }
 
 func benchDir(cfg *config.Config) string {
-	return filepath.Join(perf.K9sBenchDir, cfg.K9s.CurrentContextDir())
+	return filepath.Join(perf.K9sBenchDir, cfg.K9s.CurrentCluster)
 }
 
 func readBenchFile(cfg *config.Config, n string) (string, error) {

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package model
 
 import (
@@ -38,6 +41,11 @@ func NewYAML(gvr client.GVR, path string) *YAML {
 		gvr:  gvr,
 		path: path,
 	}
+}
+
+// GVR returns the resource gvr.
+func (y *YAML) GVR() client.GVR {
+	return y.gvr
 }
 
 // GetPath returns the active resource path.

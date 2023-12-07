@@ -1,13 +1,16 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package render
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"strings"
 
 	"github.com/derailed/k9s/internal/client"
+
 	metav1beta1 "k8s.io/apimachinery/pkg/apis/meta/v1beta1"
 )
 
@@ -95,8 +98,6 @@ func (g *Generic) Render(o interface{}, ns string, r *Row) error {
 	}
 	if d, ok := duration.(string); ok {
 		r.Fields = append(r.Fields, d)
-	} else {
-		log.Warn().Msgf("No Duration detected on age field")
 	}
 
 	return nil

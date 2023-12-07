@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package view
 
 import (
@@ -66,7 +69,7 @@ func (s *Secret) decodeCmd(evt *tcell.EventKey) *tcell.EventKey {
 		return nil
 	}
 
-	details := NewDetails(s.App(), "Secret Decoder", path, true).Update(string(raw))
+	details := NewDetails(s.App(), "Secret Decoder", path, contentYAML, true).Update(string(raw))
 	if err := s.App().inject(details, false); err != nil {
 		s.App().Flash().Err(err)
 	}

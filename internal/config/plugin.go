@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package config
 
 import (
@@ -6,11 +9,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/adrg/xdg"
 	"gopkg.in/yaml.v2"
 )
 
-// K9sPlugins manages K9s plugins.
-var K9sPlugins = filepath.Join(K9sHome(), "plugin.yml")
+// K9sPluginsFilePath manages K9s plugins.
+var K9sPluginsFilePath = YamlExtension(filepath.Join(K9sHome(), "plugin.yml"))
+var K9sPluginDirectory = filepath.Join("k9s", "plugins")
 
 // Plugins represents a collection of plugins.
 type Plugins struct {
@@ -42,11 +47,16 @@ func NewPlugins() Plugins {
 
 // Load K9s plugins.
 func (p Plugins) Load() error {
-	return p.LoadPlugins(K9sPlugins)
+	pluginDirs := make([]string, 0, len(xdg.DataDirs))
+	for _, dataDir := range xdg.DataDirs {
+		pluginDirs = append(pluginDirs, filepath.Join(dataDir, K9sPluginDirectory))
+	}
+
+	return p.LoadPlugins(K9sPluginsFilePath, pluginDirs)
 }
 
-// LoadPlugins loads plugins from a given file.
-func (p Plugins) LoadPlugins(path string) error {
+// LoadPlugins loads plugins from a given file and a set of plugin directories.
+func (p Plugins) LoadPlugins(path string, pluginDirs []string) error {
 	f, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -58,6 +68,27 @@ func (p Plugins) LoadPlugins(path string) error {
 	}
 	for k, v := range pp.Plugin {
 		p.Plugin[k] = v
+	}
+
+	for _, pluginDir := range pluginDirs {
+		pluginFiles, err := os.ReadDir(pluginDir)
+		if err != nil {
+			continue
+		}
+		for _, file := range pluginFiles {
+			if file.IsDir() || !isYamlFile(file.Name()) {
+				continue
+			}
+			pluginFile, err := os.ReadFile(filepath.Join(pluginDir, file.Name()))
+			if err != nil {
+				return err
+			}
+			var plugin Plugin
+			if err = yaml.Unmarshal(pluginFile, &plugin); err != nil {
+				return err
+			}
+			p.Plugin[strings.TrimSuffix(file.Name(), filepath.Ext(file.Name()))] = plugin
+		}
 	}
 
 	return nil

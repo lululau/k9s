@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package view
 
 import (
@@ -20,7 +23,7 @@ func loadCustomViewers() MetaViewers {
 
 func helmViewers(vv MetaViewers) {
 	vv[client.NewGVR("helm")] = MetaViewer{
-		viewerFn: NewHelm,
+		viewerFn: NewHelmChart,
 	}
 }
 
@@ -61,12 +64,11 @@ func miscViewers(vv MetaViewers) {
 	vv[client.NewGVR("contexts")] = MetaViewer{
 		viewerFn: NewContext,
 	}
-	// BOZO!! revamp with latest...
-	// vv[client.NewGVR("openfaas")] = MetaViewer{
-	// 	viewerFn: NewOpenFaas,
-	// }
 	vv[client.NewGVR("containers")] = MetaViewer{
 		viewerFn: NewContainer,
+	}
+	vv[client.NewGVR("scans")] = MetaViewer{
+		viewerFn: NewImageScan,
 	}
 	vv[client.NewGVR("portforwards")] = MetaViewer{
 		viewerFn: NewPortForward,

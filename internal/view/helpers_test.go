@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package view
 
 import (
@@ -62,7 +65,7 @@ func TestExtractApp(t *testing.T) {
 		err error
 	}{
 		"cool":     {app: app},
-		"not-cool": {err: errors.New("No application found in context")},
+		"not-cool": {err: errors.New("no application found in context")},
 	}
 
 	for k := range uu {
@@ -103,7 +106,7 @@ func TestAsKey(t *testing.T) {
 		e   tcell.Key
 	}{
 		"cool": {k: "Ctrl-A", e: tcell.KeyCtrlA},
-		"miss": {k: "fred", e: 0, err: errors.New("No matching key found fred")},
+		"miss": {k: "fred", e: 0, err: errors.New("no matching key found fred")},
 	}
 
 	for k := range uu {

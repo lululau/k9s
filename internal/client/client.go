@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package client
 
 import (
@@ -31,6 +34,9 @@ const (
 )
 
 var supportedMetricsAPIVersions = []string{"v1beta1"}
+
+// Namespaces tracks a collection of namespace names.
+type Namespaces map[string]struct{}
 
 // APIClient represents a Kubernetes api client.
 type APIClient struct {
@@ -209,7 +215,7 @@ func (a *APIClient) ServerVersion() (*version.Info, error) {
 // ValidNamespaces returns all available namespaces.
 func (a *APIClient) ValidNamespaces() ([]v1.Namespace, error) {
 	if a == nil {
-		return []v1.Namespace{}, nil
+		return nil, fmt.Errorf("validNamespaces: no available client found")
 	}
 
 	if nn, ok := a.cache.Get("validNamespaces"); ok {
@@ -282,6 +288,9 @@ func (a *APIClient) Config() *Config {
 // HasMetrics checks if the cluster supports metrics.
 func (a *APIClient) HasMetrics() bool {
 	err := a.supportsMetricsResources()
+	if err != nil {
+		log.Debug().Msgf("Metrics server detect failed: %s", err)
+	}
 	return err == nil
 }
 
@@ -348,6 +357,7 @@ func (a *APIClient) CachedDiscovery() (*disk.CachedDiscoveryClient, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	httpCacheDir := filepath.Join(mustHomeDir(), ".kube", "http-cache")
 	discCacheDir := filepath.Join(mustHomeDir(), ".kube", "cache", "discovery", toHostDir(cfg.Host))
 

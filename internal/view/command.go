@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package view
 
 import (
@@ -63,27 +66,23 @@ func (c *Command) Reset(clear bool) error {
 }
 
 func allowedXRay(gvr client.GVR) bool {
-	gg := []string{
-		"v1/pods",
-		"v1/services",
-		"apps/v1/deployments",
-		"apps/v1/daemonsets",
-		"apps/v1/statefulsets",
-		"apps/v1/replicasets",
-	}
-	for _, g := range gg {
-		if g == gvr.String() {
-			return true
-		}
+	gg := map[string]struct{}{
+		"v1/pods":              {},
+		"v1/services":          {},
+		"apps/v1/deployments":  {},
+		"apps/v1/daemonsets":   {},
+		"apps/v1/statefulsets": {},
+		"apps/v1/replicasets":  {},
 	}
 
-	return false
+	_, ok := gg[gvr.String()]
+	return ok
 }
 
 func (c *Command) xrayCmd(cmd string) error {
 	tokens := strings.Split(cmd, " ")
 	if len(tokens) < 2 {
-		return errors.New("You must specify a resource")
+		return errors.New("you must specify a resource")
 	}
 	gvr, ok := c.alias.AsGVR(tokens[1])
 	if !ok {
@@ -108,7 +107,7 @@ func (c *Command) xrayCmd(cmd string) error {
 	return c.exec(cmd, "xrays", x, true)
 }
 
-// Exec the Command by showing associated display.
+// Run execs the command by showing associated display.
 func (c *Command) run(cmd, path string, clearStack bool) error {
 	if c.specialCmd(cmd, path) {
 		return nil
@@ -119,6 +118,11 @@ func (c *Command) run(cmd, path string, clearStack bool) error {
 	if err != nil {
 		return err
 	}
+	var cns string
+	tt := strings.Split(gvr, " ")
+	if len(tt) == 2 {
+		gvr, cns = tt[0], tt[1]
+	}
 
 	switch command {
 	case "ctx", "context", "contexts":
@@ -128,7 +132,7 @@ func (c *Command) run(cmd, path string, clearStack bool) error {
 		return c.exec(cmd, gvr, c.componentFor(gvr, path, v), clearStack)
 	case "dir":
 		if len(cmds) != 2 {
-			return errors.New("You must specify a directory")
+			return errors.New("you must specify a directory")
 		}
 		return c.app.dirCmd(cmds[1])
 	default:
@@ -136,6 +140,9 @@ func (c *Command) run(cmd, path string, clearStack bool) error {
 		ns := c.app.Config.ActiveNamespace()
 		if len(cmds) == 2 {
 			ns = cmds[1]
+		}
+		if cns != "" {
+			ns = cns
 		}
 		if err := c.app.switchNS(ns); err != nil {
 			return err
@@ -254,18 +261,19 @@ func (c *Command) exec(cmd, gvr string, comp model.Component, clearStack bool) (
 			} else {
 				_ = c.run(hh[0], "", true)
 			}
-			err = fmt.Errorf("Invalid command %q", cmd)
+			err = fmt.Errorf("invalid command %q", cmd)
 		}
 	}()
 
 	if comp == nil {
-		return fmt.Errorf("No component found for %s", gvr)
+		return fmt.Errorf("no component found for %s", gvr)
 	}
 	c.app.Flash().Infof("Viewing %s...", client.NewGVR(gvr).R())
+	command := cmd
 	if tokens := strings.Split(cmd, " "); len(tokens) >= 2 {
-		cmd = tokens[0]
+		command = tokens[0]
 	}
-	c.app.Config.SetActiveView(cmd)
+	c.app.Config.SetActiveView(command)
 	if err := c.app.Config.Save(); err != nil {
 		log.Error().Err(err).Msg("Config save failed!")
 	}

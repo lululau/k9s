@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package watch
 
 import (
@@ -67,7 +70,7 @@ func (f *Factory) Terminate() {
 
 // List returns a resource collection.
 func (f *Factory) List(gvr, ns string, wait bool, labels labels.Selector) ([]runtime.Object, error) {
-	inf, err := f.CanForResource(ns, gvr, client.MonitorAccess)
+	inf, err := f.CanForResource(ns, gvr, client.ListAccess)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +97,7 @@ func (f *Factory) List(gvr, ns string, wait bool, labels labels.Selector) ([]run
 
 // HasSynced checks if given informer is up to date.
 func (f *Factory) HasSynced(gvr, ns string) (bool, error) {
-	inf, err := f.CanForResource(ns, gvr, client.MonitorAccess)
+	inf, err := f.CanForResource(ns, gvr, client.ListAccess)
 	if err != nil {
 		return false, err
 	}

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package view_test
 
 import (
@@ -16,7 +19,7 @@ func TestPodNew(t *testing.T) {
 
 	assert.Nil(t, po.Init(makeCtx()))
 	assert.Equal(t, "Pods", po.Name())
-	assert.Equal(t, 25, len(po.Hints()))
+	assert.Equal(t, 27, len(po.Hints()))
 }
 
 // Helpers...

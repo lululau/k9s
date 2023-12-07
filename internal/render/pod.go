@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package render
 
 import (
@@ -15,6 +18,29 @@ import (
 	mv1beta1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 
 	"github.com/derailed/k9s/internal/client"
+	"github.com/derailed/k9s/internal/vul"
+)
+
+const (
+	// NodeUnreachablePodReason is reason and message set on a pod when its state
+	// cannot be confirmed as kubelet is unresponsive on the node it is (was) running.
+	NodeUnreachablePodReason = "NodeLost" // k8s.io/kubernetes/pkg/util/node.NodeUnreachablePodReason
+	vulIdx                   = 2
+)
+
+const (
+	PhaseTerminating       = "Terminating"
+	PhaseInitialized       = "Initialized"
+	PhaseRunning           = "Running"
+	PhaseNotReady          = "NoReady"
+	PhaseCompleted         = "Completed"
+	PhaseContainerCreating = "ContainerCreating"
+	PhasePodInitializing   = "PodInitializing"
+	PhaseUnknown           = "Unknown"
+	PhaseCrashLoop         = "CrashLoopBackOff"
+	PhaseError             = "Error"
+	PhaseImagePullBackOff  = "ImagePullBackOff"
+	PhaseOOMKilled         = "OOMKilled"
 )
 
 // Pod renders a K8s Pod to screen.
@@ -59,13 +85,18 @@ func (p Pod) ColorerFunc() ColorerFunc {
 
 // Header returns a header row.
 func (Pod) Header(ns string) Header {
-	return Header{
+	h := Header{
 		HeaderColumn{Name: "NAMESPACE"},
 		HeaderColumn{Name: "NAME"},
+		HeaderColumn{Name: "VS"},
 		HeaderColumn{Name: "PF"},
 		HeaderColumn{Name: "READY"},
-		HeaderColumn{Name: "RESTARTS", Align: tview.AlignRight},
 		HeaderColumn{Name: "STATUS"},
+		HeaderColumn{Name: "RESTARTS", Align: tview.AlignRight},
+		HeaderColumn{Name: "IP"},
+		HeaderColumn{Name: "NODE"},
+		HeaderColumn{Name: "NOMINATED NODE", Wide: true},
+		HeaderColumn{Name: "READINESS GATES", Wide: true},
 		HeaderColumn{Name: "CPU", Align: tview.AlignRight, MX: true},
 		HeaderColumn{Name: "MEM", Align: tview.AlignRight, MX: true},
 		HeaderColumn{Name: "CPU/R:L", Align: tview.AlignRight, Wide: true},
@@ -74,22 +105,34 @@ func (Pod) Header(ns string) Header {
 		HeaderColumn{Name: "%CPU/L", Align: tview.AlignRight, MX: true},
 		HeaderColumn{Name: "%MEM/R", Align: tview.AlignRight, MX: true},
 		HeaderColumn{Name: "%MEM/L", Align: tview.AlignRight, MX: true},
-		HeaderColumn{Name: "IP"},
-		HeaderColumn{Name: "NODE"},
 		HeaderColumn{Name: "QOS", Wide: true},
 		HeaderColumn{Name: "LABELS", Wide: true},
 		HeaderColumn{Name: "VALID", Wide: true},
-		HeaderColumn{Name: "NOMINATED NODE", Wide: true},
-		HeaderColumn{Name: "READINESS GATES", Wide: true},
 		HeaderColumn{Name: "AGE", Time: true},
 	}
+	if vul.ImgScanner == nil {
+		h = append(h[:vulIdx], h[vulIdx+1:]...)
+	}
+
+	return h
+}
+
+// ExtractImages returns a collection of container images.
+// !!BOZO!! If this has any legs?? enable scans on other container types.
+func ExtractImages(spec *v1.PodSpec) []string {
+	ii := make([]string, 0, len(spec.Containers))
+	for _, c := range spec.Containers {
+		ii = append(ii, c.Image)
+	}
+
+	return ii
 }
 
 // Render renders a K8s resource to screen.
 func (p Pod) Render(o interface{}, ns string, row *Row) error {
 	pwm, ok := o.(*PodWithMetrics)
 	if !ok {
-		return fmt.Errorf("Expected PodWithMetrics, but got %T", o)
+		return fmt.Errorf("expected PodWithMetrics, but got %T", o)
 	}
 
 	var po v1.Pod
@@ -97,8 +140,10 @@ func (p Pod) Render(o interface{}, ns string, row *Row) error {
 		return err
 	}
 
-	ss := po.Status.ContainerStatuses
-	cr, _, rc := p.Statuses(ss)
+	ics := po.Status.InitContainerStatuses
+	_, _, irc := p.Statuses(ics)
+	cs := po.Status.ContainerStatuses
+	cr, _, rc := p.Statuses(cs)
 
 	c, r := p.gatherPodMX(&po, pwm.MX)
 	phase := p.Phase(&po)
@@ -106,10 +151,15 @@ func (p Pod) Render(o interface{}, ns string, row *Row) error {
 	row.Fields = Fields{
 		po.Namespace,
 		po.ObjectMeta.Name,
+		computeVulScore(&po.Spec),
 		"●",
 		strconv.Itoa(cr) + "/" + strconv.Itoa(len(po.Spec.Containers)),
-		strconv.Itoa(rc),
 		phase,
+		strconv.Itoa(rc + irc),
+		na(po.Status.PodIP),
+		na(po.Spec.NodeName),
+		asNominated(po.Status.NominatedNodeName),
+		asReadinessGate(po),
 		toMc(c.cpu),
 		toMi(c.mem),
 		toMc(r.cpu) + ":" + toMc(r.lcpu),
@@ -118,14 +168,13 @@ func (p Pod) Render(o interface{}, ns string, row *Row) error {
 		client.ToPercentageStr(c.cpu, r.lcpu),
 		client.ToPercentageStr(c.mem, r.mem),
 		client.ToPercentageStr(c.mem, r.lmem),
-		na(po.Status.PodIP),
-		na(po.Spec.NodeName),
 		p.mapQOS(po.Status.QOSClass),
 		mapToStr(po.Labels),
-		asStatus(p.diagnose(phase, cr, len(ss))),
-		asNominated(po.Status.NominatedNodeName),
-		asReadinessGate(po),
-		toAge(po.GetCreationTimestamp()),
+		AsStatus(p.diagnose(phase, cr, len(cs))),
+		ToAge(po.GetCreationTimestamp()),
+	}
+	if vul.ImgScanner == nil {
+		row.Fields = append(row.Fields[:vulIdx], row.Fields[vulIdx+1:]...)
 	}
 
 	return nil
@@ -290,7 +339,7 @@ func (*Pod) Statuses(ss []v1.ContainerStatus) (cr, ct, rc int) {
 func (p *Pod) Phase(po *v1.Pod) string {
 	status := string(po.Status.Phase)
 	if po.Status.Reason != "" {
-		if po.DeletionTimestamp != nil && po.Status.Reason == "NodeLost" {
+		if po.DeletionTimestamp != nil && po.Status.Reason == NodeUnreachablePodReason {
 			return "Unknown"
 		}
 		status = po.Status.Reason
@@ -368,4 +417,90 @@ func checkContainerStatus(cs v1.ContainerStatus, i, initCount int) string {
 	default:
 		return "Init:" + strconv.Itoa(i) + "/" + strconv.Itoa(initCount)
 	}
+}
+
+// PosStatus computes pod status.
+func PodStatus(pod *v1.Pod) string {
+	reason := string(pod.Status.Phase)
+	if pod.Status.Reason != "" {
+		reason = pod.Status.Reason
+	}
+
+	for _, condition := range pod.Status.Conditions {
+		if condition.Type == v1.PodScheduled && condition.Reason == v1.PodReasonSchedulingGated {
+			reason = v1.PodReasonSchedulingGated
+		}
+	}
+
+	var initializing bool
+	for i := range pod.Status.InitContainerStatuses {
+		container := pod.Status.InitContainerStatuses[i]
+		switch {
+		case container.State.Terminated != nil && container.State.Terminated.ExitCode == 0:
+			continue
+		case container.State.Terminated != nil:
+			if len(container.State.Terminated.Reason) == 0 {
+				if container.State.Terminated.Signal != 0 {
+					reason = fmt.Sprintf("Init:Signal:%d", container.State.Terminated.Signal)
+				} else {
+					reason = fmt.Sprintf("Init:ExitCode:%d", container.State.Terminated.ExitCode)
+				}
+			} else {
+				reason = "Init:" + container.State.Terminated.Reason
+			}
+			initializing = true
+		case container.State.Waiting != nil && len(container.State.Waiting.Reason) > 0 && container.State.Waiting.Reason != "PodInitializing":
+			reason = "Init:" + container.State.Waiting.Reason
+			initializing = true
+		default:
+			reason = fmt.Sprintf("Init:%d/%d", i, len(pod.Spec.InitContainers))
+			initializing = true
+		}
+		break
+	}
+	if !initializing {
+		var hasRunning bool
+		for i := len(pod.Status.ContainerStatuses) - 1; i >= 0; i-- {
+			container := pod.Status.ContainerStatuses[i]
+			if container.State.Waiting != nil && container.State.Waiting.Reason != "" {
+				reason = container.State.Waiting.Reason
+			} else if container.State.Terminated != nil && container.State.Terminated.Reason != "" {
+				reason = container.State.Terminated.Reason
+			} else if container.State.Terminated != nil && container.State.Terminated.Reason == "" {
+				if container.State.Terminated.Signal != 0 {
+					reason = fmt.Sprintf("Signal:%d", container.State.Terminated.Signal)
+				} else {
+					reason = fmt.Sprintf("ExitCode:%d", container.State.Terminated.ExitCode)
+				}
+			} else if container.Ready && container.State.Running != nil {
+				hasRunning = true
+			}
+		}
+
+		if reason == PhaseCompleted && hasRunning {
+			if hasPodReadyCondition(pod.Status.Conditions) {
+				reason = PhaseRunning
+			} else {
+				reason = PhaseNotReady
+			}
+		}
+	}
+
+	if pod.DeletionTimestamp != nil && pod.Status.Reason == NodeUnreachablePodReason {
+		reason = PhaseUnknown
+	} else if pod.DeletionTimestamp != nil {
+		reason = PhaseTerminating
+	}
+
+	return reason
+}
+
+func hasPodReadyCondition(conditions []v1.PodCondition) bool {
+	for _, condition := range conditions {
+		if condition.Type == v1.PodReady && condition.Status == v1.ConditionTrue {
+			return true
+		}
+	}
+
+	return false
 }

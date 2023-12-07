@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package dao
 
 import (
@@ -6,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/derailed/k9s/internal/client"
+	"github.com/derailed/k9s/internal/render"
 	"github.com/rs/zerolog/log"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,13 +25,24 @@ const (
 )
 
 var (
-	_ Accessor = (*CronJob)(nil)
-	_ Runnable = (*CronJob)(nil)
+	_ Accessor    = (*CronJob)(nil)
+	_ Runnable    = (*CronJob)(nil)
+	_ ImageLister = (*CronJob)(nil)
 )
 
 // CronJob represents a cronjob K8s resource.
 type CronJob struct {
 	Generic
+}
+
+// ListImages lists container images.
+func (c *CronJob) ListImages(ctx context.Context, fqn string) ([]string, error) {
+	cj, err := c.GetInstance(fqn)
+	if err != nil {
+		return nil, err
+	}
+
+	return render.ExtractImages(&cj.Spec.JobTemplate.Spec.Template.Spec), nil
 }
 
 // Run a CronJob.
@@ -57,9 +72,9 @@ func (c *CronJob) Run(path string) error {
 	true := true
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      jobName + "-manual-" + rand.String(3),
-			Namespace: ns,
-			Labels:    cj.Spec.JobTemplate.Labels,
+			Name:        jobName + "-manual-" + rand.String(3),
+			Namespace:   ns,
+			Labels:      cj.Spec.JobTemplate.Labels,
 			Annotations: cj.Spec.JobTemplate.Annotations,
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -108,6 +123,22 @@ func (c *CronJob) ScanSA(ctx context.Context, fqn string, wait bool) (Refs, erro
 	}
 
 	return refs, nil
+}
+
+// GetInstance fetch a matching cronjob.
+func (c *CronJob) GetInstance(fqn string) (*batchv1.CronJob, error) {
+	o, err := c.GetFactory().Get(c.GVR(), fqn, true, labels.Everything())
+	if err != nil {
+		return nil, err
+	}
+
+	var cj batchv1.CronJob
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(o.(*unstructured.Unstructured).Object, &cj)
+	if err != nil {
+		return nil, errors.New("expecting cronjob resource")
+	}
+
+	return &cj, nil
 }
 
 // ToggleSuspend toggles suspend/resume on a CronJob.

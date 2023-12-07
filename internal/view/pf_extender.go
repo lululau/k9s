@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package view
 
 import (
@@ -113,7 +116,7 @@ func startFwdCB(v ResourceViewer, path string, pts port.PortTunnels) error {
 	tt := make([]string, 0, len(pts))
 	for _, pt := range pts {
 		if _, ok := v.App().factory.ForwarderFor(dao.PortForwardID(path, pt.Container, pt.PortMap())); ok {
-			return fmt.Errorf("A port-forward is already active on pod %s", path)
+			return fmt.Errorf("port-forward is already active on pod %s", path)
 		}
 		pf := dao.NewPortForwarder(v.App().factory)
 		fwd, err := pf.Start(path, pt)

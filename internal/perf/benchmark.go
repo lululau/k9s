@@ -1,16 +1,20 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of K9s
+
 package perf
 
 import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/derailed/k9s/internal/dao"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/derailed/k9s/internal/dao"
 
 	"github.com/derailed/k9s/internal/client"
 	"github.com/derailed/k9s/internal/config"
@@ -24,7 +28,6 @@ const (
 	benchFmat    = "%s_%s_%d.txt"
 	k9sUA        = "k9s/"
 )
-
 
 var (
 	// K9sBenchDir directory to store K9s Benchmark files.
@@ -107,7 +110,7 @@ func (b *Benchmark) Canceled() bool {
 	return b.canceled
 }
 
-// Run starts a benchmark,.
+// Run starts a benchmark.
 func (b *Benchmark) Run(cluster string, done func()) {
 	log.Debug().Msgf("Running benchmark on cluster %s", cluster)
 	buff := new(bytes.Buffer)
@@ -115,7 +118,7 @@ func (b *Benchmark) Run(cluster string, done func()) {
 	// this call will block until the benchmark is complete or times out.
 	b.worker.Run()
 	b.worker.Stop()
-	if len(buff.Bytes()) > 0 {
+	if buff.Len() > 0 {
 		if err := b.save(cluster, buff); err != nil {
 			log.Error().Err(err).Msg("Saving Benchmark")
 		}
@@ -141,11 +144,7 @@ func (b *Benchmark) save(cluster string, r io.Reader) error {
 		}
 	}()
 
-	bb, err := io.ReadAll(r)
-	if err != nil {
-		return err
-	}
-	if _, err := f.Write(bb); err != nil {
+	if _, err = io.Copy(f, r); err != nil {
 		return err
 	}
 
